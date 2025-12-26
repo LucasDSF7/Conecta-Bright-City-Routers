@@ -1,3 +1,4 @@
 requests==2.32.5
 python-dotenv==1.2.1
 pytest==9.0.2
+PyPasser==0.0.5
