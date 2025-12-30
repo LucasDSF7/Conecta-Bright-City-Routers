@@ -14,9 +14,6 @@ class LCU:
     ID_PONTO_SERVICO: int = None
     pole_id_s: int = None
     name_s: str = None
-    ALTURA_DO_POSTE: float = None
-    MARCO: str = None
-    BAIRRO: str = None
     ocorrencia_criada: bool = None
     address1_s: str = None
     latitude_f: float = None

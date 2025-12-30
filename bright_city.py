@@ -4,6 +4,7 @@ Under development
 '''
 
 import os
+from datetime import datetime
 
 import requests
 from pypasser import reCaptchaV3
@@ -48,14 +49,15 @@ class BrightCitySession(requests.sessions.Session):
         jwt = r.json()['message']['token']['jwttoken']
         self.headers = {'Authorization': jwt}
 
-    def bc_post(self, payload: dict[str, str], url: str) -> any:
+    def bc_post(self, url: str, **kwargs) -> any:
         '''
         Modification to post method to handle disconnection from the server.
+        See post propertys.
         '''
-        r = self.post(url=url, json=payload)
+        r = self.post(url=url, **kwargs)
         if r.status_code == 403:
             self.auth_bc()
-        r = self.post(url=url, json=payload)
+        r = self.post(url=url, **kwargs)
         return r.json()
 
 
@@ -68,11 +70,15 @@ class DeviceHistory():
             self, session: BrightCitySession):
         self.session = session
         self.url = os.environ.get('BC_URL') + 'bc_ui_app/api/base/device/history'
+        self.records: list[dict] = None
 
-    def export(self, measurements: list[str], lcus_id: list[int], data_inicial: str, data_final: str) -> list[dict]:
+    def export(self, measurements: list[str], lcus_id: list[int], data_inicial: datetime, data_final: datetime) -> list[dict]:
         '''
         Export a list of measurements from a list of lcus_ids.
         '''
+        # datetime must be in UTC +00:00.
+        data_inicial = data_inicial.strftime('%Y-%m-%dT%H:%M:%SZ')
+        data_final = data_final.strftime('%Y-%m-%dT%H:%M:%SZ')
         payload = {
                 "bpoint": lcus_id,
                 "measurement": measurements,
@@ -83,8 +89,8 @@ class DeviceHistory():
                 "port1Measurement": [],
                 "port2Measurement": []
         }
-        r = self.session.bc_post(url=self.url, json=payload)
-        return r
+        self.records = self.session.bc_post(url=self.url, json=payload)
+        return self.records
 
 
 class PointsSearch():
@@ -95,6 +101,7 @@ class PointsSearch():
     def __init__(self, session: BrightCitySession):
         self.session = session
         self.url = os.environ.get('BC_URL') + 'bc_ui_app/api/base/get/bright-points/search'
+        self.records: list[dict] = None
 
     def get_lcu_count(self) -> int:
         '''
@@ -118,4 +125,5 @@ class PointsSearch():
         'IP': 'undefined'
         }
         r = self.session.bc_post(url=self.url, files=payload)
-        return r['message'][0]['devices']
+        self.records = r['message'][0]['devices']
+        return self.records
