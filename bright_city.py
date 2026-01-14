@@ -57,8 +57,31 @@ class BrightCitySession(requests.sessions.Session):
         r = self.post(url=url, **kwargs)
         if r.status_code == 403:
             self.auth_bc()
-        r = self.post(url=url, **kwargs)
+            r = self.post(url=url, **kwargs)
         return r.json()
+
+
+class AlarmsCount():
+    '''
+    Router Alarms Count from Birght City API.
+    '''
+
+    def __init__(self, session: BrightCitySession):
+        self.session = session
+        self.url = os.environ.get('BC_URL') + 'bc_ui_app/api/base/get/alarms-count'
+        self.records: list[dict] = None
+
+    def export(self):
+        '''
+        Export records of alarms
+        '''
+        payload = {
+            'bp_solr_search': '''{"customerId":4,"filter":{},"systemId":1}''',
+            'user': 'LucasD',
+            'IP': 'undefined'
+        }
+        self.records = self.session.bc_post(url=self.url, files=payload)['message'][0]['alarmDetails']
+        return self.records
 
 
 class DeviceHistory():
@@ -66,8 +89,7 @@ class DeviceHistory():
     Router device/history from Bright City API.
     '''
 
-    def __init__(
-            self, session: BrightCitySession):
+    def __init__(self, session: BrightCitySession):
         self.session = session
         self.url = os.environ.get('BC_URL') + 'bc_ui_app/api/base/device/history'
         self.records: list[dict] = None
@@ -89,7 +111,7 @@ class DeviceHistory():
                 "port1Measurement": [],
                 "port2Measurement": []
         }
-        self.records = self.session.bc_post(url=self.url, json=payload)
+        self.records = self.session.bc_post(url=self.url, json=payload, timeout=120)
         return self.records
 
 

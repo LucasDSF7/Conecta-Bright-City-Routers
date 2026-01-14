@@ -3,6 +3,7 @@ Dataclasses for storing data exported by API calls.
 '''
 
 from dataclasses import dataclass
+from datetime import datetime
 
 
 @dataclass
@@ -27,3 +28,25 @@ class LCU:
     installationdate_dt: str = None
     alarm_names_ssci: list[str] = None
     distance: float = None
+
+
+@dataclass
+class AlarmsTable:
+    '''
+    Dataclass for creating a silver layer in medallion pattern
+    '''
+    Data: datetime = None
+    IDLCU: int = None
+    CodigoBarras: str = None
+    NomeLCU: str = None
+    Latitude_lcu: float = None
+    Longitude_lcu: float = None
+    DistanciaPontoServico: float = None
+    IDPontoServico: int = None
+    Bairro: str = None
+    Latitude: float = None
+    Longitude: float = None
+    MarcoContrato: str = None
+    AlturaInstalacaoLuminaria: float = None
+    TipoPoste: str = None
+    NomeAlarme: str = None
