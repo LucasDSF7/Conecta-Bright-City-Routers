@@ -5,6 +5,9 @@ Under development
 
 import os
 from datetime import datetime
+from dataclasses import dataclass, fields
+from typing import Self
+import json
 
 import requests
 from pypasser import reCaptchaV3
@@ -16,6 +19,77 @@ ANCHOR_URL = 'https://www.google.com/recaptcha/api2/anchor?ar=1&k=6LdnBnYoAAAAAA
 'UkC6W0J&size=invisible&anchor-ms=20000&execute-ms=15000&cb=pd4zzxx43gna'
 
 load_dotenv()
+
+
+@dataclass
+class LCU:
+    '''
+    Dataclass para conter informações úteis de uma LCU
+    '''
+    id: int = None
+    ID_PONTO_SERVICO: int = None
+    pole_id_s: int = None
+    name_s: str = None
+    ocorrencia_criada: bool = None
+    address1_s: str = None
+    latitude_f: float = None
+    longitude_f: float = None
+    dimming_level_set_i: int = None
+    work_order_s: int = None
+    barcode_s: str = None
+    ctlatitude_f: float = None
+    ctlongitude_f: float = None
+    last_update_dt: str = None
+    installationdate_dt: str = None
+    alarm_names_ssci: list[str] = None
+    distance: float = None
+
+    def populate(self, record: dict) -> Self:
+        '''
+        Populates a LCU using a record.
+        '''
+        for key in fields(self):
+            setattr(self, key.name, record.get(key.name))
+        return self
+
+
+@dataclass
+class AlarmsTable:
+    '''
+    Dataclass for creating a silver layer in medallion pattern
+    '''
+    Data: datetime = None
+    IDLCU: int = None
+    CodigoBarras: str = None
+    NomeLCU: str = None
+    Latitude_lcu: float = None
+    Longitude_lcu: float = None
+    DistanciaPontoServico: float = None
+    IDPontoServico: int = None
+    Bairro: str = None
+    Latitude: float = None
+    Longitude: float = None
+    MarcoContrato: str = None
+    AlturaInstalacaoLuminaria: float = None
+    TipoPoste: str = None
+    NomeAlarme: str = None
+
+
+@dataclass
+class AlarmsDeviceTable:
+    '''
+    Dataclass for creating a table from alarms device data.
+    '''
+    Data: datetime = None
+    IDLCU: int = None
+    NomeLCU: str = None
+    Alarme: str = None
+    DataHoraDefeito: datetime = None
+    DataHoraAberturaAlarme: datetime = None
+    DataHoraResolvido: datetime = None
+    TempoDefeito: str = None
+    Latitute: float = None
+    Longitude: float = None
 
 
 class BrightCitySession(requests.sessions.Session):
@@ -81,6 +155,36 @@ class AlarmsCount():
             'IP': 'undefined'
         }
         self.records = self.session.bc_post(url=self.url, files=payload)['message'][0]['alarmDetails']
+        return self.records
+
+
+class AlarmsDevice():
+    '''
+    Router Alarms Device
+    '''
+
+    def __init__(self, session: BrightCitySession):
+        self.session = session
+        self.url = os.environ.get('BC_URL') + 'ams/alarms/device/'
+        self.records: list[dict] = None
+
+    def export(self, id_lcu: int):
+        '''
+        Export a list of alarms from a LCU.
+        '''
+        parameters_dto = {
+            "filter": {"startRow": 0, "count": 40},
+            "sorting": {
+                "sortFirst": {"field": "dateOpen", "sort": "desc"}
+            }
+        }
+        payload = {
+            'parameters': (None, json.dumps(parameters_dto)),
+            'user': (None, 'LucasD'),
+            'IP': (None, 'undefined'),
+            'systemId': (None, 'undefined')
+        }
+        self.records = self.session.bc_post(url=self.url + str(id_lcu), files=payload, timeout=120)
         return self.records
 
 
